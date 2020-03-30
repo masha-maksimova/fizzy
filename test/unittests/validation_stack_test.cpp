@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include "parser.hpp"
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <test/utils/asserts.hpp>
 #include <test/utils/hex.hpp>
@@ -49,8 +50,8 @@ TEST(validation_stack, block_with_result)
     )
     */
     const auto wasm = from_hex("0061736d01000000010401600000030201000a0a010800027f417f0b1a0b");
-    parse(wasm);
-    // TODO: Add max stack height check.
+    const auto module = parse(wasm);
+    EXPECT_THAT(module.codesec[0].max_stack_height, 1);
 }
 
 TEST(validation_stack, block_with_result_stack_underflow)
@@ -93,8 +94,8 @@ TEST(validation_stack, loop_with_result)
     )
     */
     const auto wasm = from_hex("0061736d01000000010401600000030201000a0a010800037f417f0b1a0b");
-    parse(wasm);
-    // TODO: Add max stack height check.
+    const auto module = parse(wasm);
+    EXPECT_THAT(module.codesec[0].max_stack_height, 1);
 }
 
 TEST(validation_stack, loop_with_result_stack_underflow)
@@ -170,8 +171,8 @@ TEST(validation_stack, unreachable)
     )
     */
     const auto wasm = from_hex("0061736d010000000105016000017f030201000a0601040000450b");
-    parse(wasm);
-    // TODO: Add max stack height check.
+    const auto module = parse(wasm);
+    EXPECT_THAT(module.codesec[0].max_stack_height, 0);
 }
 
 TEST(validation_stack, unreachable_2)
@@ -186,8 +187,8 @@ TEST(validation_stack, unreachable_2)
     )
     */
     const auto wasm = from_hex("0061736d01000000010401600000030201000a09010700006a6a6a1a0b");
-    parse(wasm);
-    // TODO: Add max stack height check.
+    const auto module = parse(wasm);
+    EXPECT_THAT(module.codesec[0].max_stack_height, 0);
 }
 
 TEST(validation_stack, unreachable_call)
@@ -239,8 +240,8 @@ TEST(validation_stack, br)
     )
     */
     const auto wasm = from_hex("0061736d01000000010401600000030201000a0b01090002400c00451a0b0b");
-    parse(wasm);
-    // TODO: Add max stack height check.
+    const auto module = parse(wasm);
+    EXPECT_THAT(module.codesec[0].max_stack_height, 0);
 }
 
 TEST(validation_stack, br_table)
@@ -260,8 +261,8 @@ TEST(validation_stack, br_table)
     */
     const auto wasm = from_hex(
         "0061736d0100000001050160017f00030201000a14011200024041e90720000e0100016c6c6c1a0b0b");
-    parse(wasm);
-    // TODO: Add max stack height check.
+    const auto module = parse(wasm);
+    EXPECT_THAT(module.codesec[0].max_stack_height, 2);
 }
 
 TEST(validation_stack, return_)
@@ -274,8 +275,8 @@ TEST(validation_stack, return_)
     )
     */
     const auto wasm = from_hex("0061736d01000000010401600000030201000a070105000f451a0b");
-    parse(wasm);
-    // TODO: Add max stack height check.
+    const auto module = parse(wasm);
+    EXPECT_THAT(module.codesec[0].max_stack_height, 0);
 }
 
 TEST(validation_stack, if_stack_underflow)
@@ -392,8 +393,8 @@ TEST(validation_stack, if_invalid_end_stack_height)
     */
     const auto wasm = from_hex(
         "0061736d01000000010401600000030201000a1701150042014102047e4201420205420342041a0b1a1a0b");
-    parse(wasm);
-    // TODO: Add max stack height check.
+    const auto module = parse(wasm);
+    EXPECT_THAT(module.codesec[0].max_stack_height, 5);  // FIXME: This value is too high.
 }
 
 TEST(validation_stack, if_with_unreachable)
