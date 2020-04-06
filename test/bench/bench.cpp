@@ -11,6 +11,7 @@
 #include <iterator>
 #include <memory>
 #include <sstream>
+#include <string>
 
 namespace fs = std::filesystem;
 
@@ -115,10 +116,10 @@ void validate_benchmark_case(benchmark::State& state, fizzy::test::WasmEngine& e
         if (!result.value)
             return state.SkipWithError("Missing result value");
         else if (*result.value != *benchmark_case.expected_result)
-            return state.SkipWithError("Incorrect result");
+            return state.SkipWithError("Incorrect result value");
     }
     else if (result.value)
-        return state.SkipWithError("Unexpected result");
+            return state.SkipWithError(("Unexpected result value: " + std::to_string(*result.value)).data());
 
     const auto memory = engine.get_memory();
     if (memory.size() < benchmark_case.expected_memory.size())
