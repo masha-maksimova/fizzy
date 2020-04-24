@@ -113,8 +113,9 @@ void validate_benchmark_case(benchmark::State& state, fizzy::test::WasmEngine& e
 
     if (benchmark_case.expected_result)
     {
+        std::string expected = std::to_string(*benchmark_case.expected_result);
         if (!result.value)
-            return state.SkipWithError("Missing result value");
+            return state.SkipWithError(("Missing result value (expected: " + expected.data() + ")"));
         else if (*result.value != *benchmark_case.expected_result)
             return state.SkipWithError("Incorrect result value");
     }
