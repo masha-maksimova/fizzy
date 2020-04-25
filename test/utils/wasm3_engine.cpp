@@ -19,7 +19,7 @@ class Wasm3Engine : public WasmEngine
 
 public:
     Wasm3Engine() : m_env{m3_NewEnvironment()} {}
-    ~Wasm3Engine()
+    ~Wasm3Engine() override
     {
         if (m_runtime)
             m3_FreeRuntime(m_runtime);
