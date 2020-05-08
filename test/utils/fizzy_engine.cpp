@@ -24,6 +24,14 @@ public:
     Result execute(FuncRef func_ref, const std::vector<uint64_t>& args) final;
 };
 
+namespace
+{
+fizzy::execution_result host_mul256(fizzy::Instance&, std::vector<uint64_t>, int)
+{
+    return {false, {}};
+}
+}  // namespace
+
 std::unique_ptr<WasmEngine> create_fizzy_engine()
 {
     return std::make_unique<FizzyEngine>();
@@ -46,7 +54,11 @@ bool FizzyEngine::instantiate(bytes_view wasm_binary)
 {
     try
     {
-        m_instance = fizzy::instantiate(fizzy::parse(wasm_binary));
+        auto module = fizzy::parse(wasm_binary);
+        m_instance = fizzy::instantiate(module, {
+                                                    {host_mul256, module.typesec[0]},
+                                                    {host_mul256, module.typesec[1]},
+                                                });
     }
     catch (...)
     {
