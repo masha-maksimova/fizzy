@@ -489,45 +489,11 @@ parser_result<Code> parse_expr(const uint8_t* pos, const uint8_t* end, const Mod
         case Instr::i64_store16:
         case Instr::i64_store32:
         {
-            size_t width = 0;
-            switch (instr)
-            {
-            case Instr::i32_load8_s:
-            case Instr::i32_load8_u:
-            case Instr::i64_load8_s:
-            case Instr::i64_load8_u:
-            case Instr::i32_store8:
-            case Instr::i64_store8:
-                width = 8;
-                break;
-            case Instr::i32_load16_s:
-            case Instr::i32_load16_u:
-            case Instr::i64_load16_s:
-            case Instr::i64_load16_u:
-            case Instr::i32_store16:
-            case Instr::i64_store16:
-                width = 16;
-                break;
-            case Instr::i32_load:
-            case Instr::i32_store:
-            case Instr::i64_load32_s:
-            case Instr::i64_load32_u:
-            case Instr::i64_store32:
-                width = 32;
-                break;
-            case Instr::i64_load:
-            case Instr::i64_store:
-                width = 64;
-                break;
-            default:
-                break;
-            }
-
             // alignment
             uint32_t align;
             std::tie(align, pos) = leb128u_decode<uint32_t>(pos, end);
             // NOTE: align > 4 is the hard limit (64 / 8) >> 1, and checking it to avoid overflows
-            if ((align > 4) || ((1 << align) > (width / 8)))
+            if ((align > 4) || ((1 << align) > metrics.memory_width))
                 throw validation_error{"alignment can't exceed operand size"};
 
             // offset
