@@ -16,6 +16,9 @@ struct InstructionMetrics
     /// The stack height change caused by the instruction execution,
     /// i.e. stack height _after_ execution - stack height _before_ execution.
     int8_t stack_height_change;
+
+    /// The memory width in bytes the instruction operates on or 0 in case not using the memory.
+    uint8_t memory_width;
 };
 
 const InstructionMetrics* get_instruction_metrics_table() noexcept;
