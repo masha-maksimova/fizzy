@@ -492,8 +492,7 @@ parser_result<Code> parse_expr(const uint8_t* pos, const uint8_t* end, const Mod
             // alignment
             uint32_t align;
             std::tie(align, pos) = leb128u_decode<uint32_t>(pos, end);
-            // NOTE: align > 4 is the hard limit (64 / 8) >> 1, and checking it to avoid overflows
-            if ((align > 4) || ((1 << align) > metrics.memory_width))
+            if ((1 << static_cast<uint64_t>(align)) > metrics.memory_width)
                 throw validation_error{"alignment can't exceed operand size"};
 
             // offset
