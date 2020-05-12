@@ -5,6 +5,7 @@
 #include "instructions.hpp"
 #include "module.hpp"
 #include "parser.hpp"
+#include "stack.hpp"
 #include <cassert>
 #include <stack>
 
@@ -85,7 +86,7 @@ parser_result<Code> parse_expr(const uint8_t* pos, const uint8_t* end, const Mod
     // The stack of control frames allowing to distinguish between block/if/else and label
     // instructions as defined in Wasm Validation Algorithm.
     // For a block/if/else instruction the value is the block/if/else's immediate offset.
-    std::stack<ControlFrame> control_stack;
+    Stack<ControlFrame> control_stack;
 
     control_stack.push({Instr::block});  // The function's implicit block.
 
@@ -97,7 +98,7 @@ parser_result<Code> parse_expr(const uint8_t* pos, const uint8_t* end, const Mod
         uint8_t opcode;
         std::tie(opcode, pos) = parse_byte(pos, end);
 
-        auto& frame = control_stack.top();
+        auto& frame = control_stack.peek();
         const auto& metrics = metrics_table[opcode];
 
         if (frame.stack_height < metrics.stack_height_required && !frame.unreachable)

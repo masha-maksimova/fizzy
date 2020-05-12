@@ -34,6 +34,8 @@ public:
         return res;
     }
 
+    T& peek(size_t depth = 0) noexcept { return (*this)[size() - depth - 1]; }
+
     T peek(size_t depth = 0) const noexcept { return (*this)[size() - depth - 1]; }
 
     /// Drops @a num_elements elements from the top of the stack.
