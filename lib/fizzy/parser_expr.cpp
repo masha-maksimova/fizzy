@@ -101,7 +101,8 @@ void push_branch_immediates(uint32_t label_idx, const ControlFrame& frame, bytes
 
 }  // namespace
 
-parser_result<Code> parse_expr(const uint8_t* pos, const uint8_t* end, const Module& module)
+parser_result<Code> parse_expr(
+    const uint8_t* pos, const uint8_t* end, TypeIdx type_idx, const Module& module)
 {
     Code code;
 
@@ -109,7 +110,9 @@ parser_result<Code> parse_expr(const uint8_t* pos, const uint8_t* end, const Mod
     // instructions as defined in Wasm Validation Algorithm.
     Stack<ControlFrame> control_stack;
 
-    control_stack.push({Instr::block});  // The function's implicit block.
+    const auto function_arity = static_cast<uint8_t>(module.typesec[type_idx].outputs.size());
+    // The function's implicit block.
+    control_stack.push({Instr::block, 0, 0, 0, 0, false, function_arity});
 
     const auto metrics_table = get_instruction_metrics_table();
 
@@ -470,16 +473,16 @@ parser_result<Code> parse_expr(const uint8_t* pos, const uint8_t* end, const Mod
             if (!module.has_table())
                 throw validation_error{"call_indirect without defined table"};
 
-            FuncIdx type_idx;
-            std::tie(type_idx, pos) = leb128u_decode<uint32_t>(pos, end);
+            TypeIdx callee_type_idx;
+            std::tie(callee_type_idx, pos) = leb128u_decode<uint32_t>(pos, end);
 
-            if (type_idx >= module.typesec.size())
+            if (callee_type_idx >= module.typesec.size())
                 throw validation_error{"invalid type index with call_indirect"};
 
-            const auto& func_type = module.typesec[type_idx];
+            const auto& func_type = module.typesec[callee_type_idx];
             update_caller_frame(frame, func_type);
 
-            push(code.immediates, type_idx);
+            push(code.immediates, callee_type_idx);
 
             if (pos == end)
                 throw parser_error{"Unexpected EOF"};

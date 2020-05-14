@@ -13,9 +13,13 @@ using namespace fizzy::test;
 
 namespace
 {
-inline auto parse_expr(const bytes& input, const Module& module = {})
+const Module ModuleWithSingleType = {
+    {FuncType{{}, {}}}, {}, {}, {}, {}, {}, {}, std::nullopt, {}, {}, {}, {}, {}, {}, {}};
+
+inline auto parse_expr(
+    const bytes& input, TypeIdx type_idx = 0, const Module& module = ModuleWithSingleType)
 {
-    return fizzy::parse_expr(input.data(), input.data() + input.size(), module);
+    return fizzy::parse_expr(input.data(), input.data() + input.size(), type_idx, module);
 }
 }  // namespace
 
@@ -240,11 +244,11 @@ TEST(parser_expr, call_indirect_table_index)
     module.tablesec.emplace_back(Table{{1, 1}});
 
     const auto code1_bin = i32_const(0) + "1100000b"_bytes;
-    const auto [code, pos] = parse_expr(code1_bin, module);
+    const auto [code, pos] = parse_expr(code1_bin, 0, module);
     EXPECT_EQ(code.instructions, (std::vector{Instr::i32_const, Instr::call_indirect, Instr::end}));
 
     const auto code2_bin = i32_const(0) + "1100010b"_bytes;
-    EXPECT_THROW_MESSAGE(parse_expr(code2_bin, module), parser_error,
+    EXPECT_THROW_MESSAGE(parse_expr(code2_bin, 0, module), parser_error,
         "invalid tableidx encountered with call_indirect");
 }
 
@@ -258,6 +262,7 @@ TEST(parser_expr, control_instr_out_of_bounds)
 TEST(parser_expr, immediate_leb128_out_of_bounds)
 {
     Module module;
+    module.typesec.emplace_back(FuncType{{}, {}});
     module.tablesec.emplace_back(Table{{1, 1}});  // needed for call_indirect
 
     for (const auto instr : {Instr::local_get, Instr::local_set, Instr::local_tee,
@@ -265,7 +270,7 @@ TEST(parser_expr, immediate_leb128_out_of_bounds)
              Instr::call_indirect, Instr::i32_const, Instr::i64_const})
     {
         const auto code = i32_const(0) + i32_const(0) + bytes{uint8_t(instr), 0x99};
-        EXPECT_THROW_MESSAGE(parse_expr(code, module), parser_error, "Unexpected EOF");
+        EXPECT_THROW_MESSAGE(parse_expr(code, 0, module), parser_error, "Unexpected EOF");
     }
 }
 
@@ -309,7 +314,7 @@ TEST(parser_expr, call_indirect_out_of_bounds)
     module.tablesec.emplace_back(Table{{1, 1}});
 
     EXPECT_THROW_MESSAGE(
-        parse_expr(i32_const(0) + "1100"_bytes, module), parser_error, "Unexpected EOF");
+        parse_expr(i32_const(0) + "1100"_bytes, 0, module), parser_error, "Unexpected EOF");
 }
 
 TEST(parser_expr, memory_grow_out_of_bounds)
