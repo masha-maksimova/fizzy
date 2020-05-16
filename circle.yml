@@ -146,6 +146,14 @@ jobs:
     steps:
     - checkout
     - run:
+        name: "Install cmake_format"
+        command: pip3 install cmake-format
+    - run:
+        name: "Check cmake format"
+        command: |
+          cmake-format .
+          cmake-lint .
+    - run:
         name: "Check code format"
         command: |
           clang-format --version
