@@ -260,6 +260,6 @@ TEST(wasm_engine, host_function)
         const auto result = engine->execute(*func, {0, 4});
         ASSERT_FALSE(result.trapped);
         ASSERT_TRUE(result.value.has_value());
-        ASSERT_EQ(*result.value, 52);
+        ASSERT_EQ(*result.value, 8388679);
     }
 }
