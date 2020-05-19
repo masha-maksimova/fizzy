@@ -90,11 +90,8 @@ void update_caller_frame(ControlFrame& frame, const FuncType& func_type)
     frame.stack_height += stack_height_change;
 }
 
-void push_branch_immediates(uint32_t label_idx, const ControlFrame& frame, bytes& immediates)
+void push_branch_immediates(const ControlFrame& frame, bytes& immediates)
 {
-    // TODO: This will be not needed when br out of blocks is resolved in parser
-    push(immediates, label_idx);
-
     // Push frame start location as br immediates - these are final if frame is loop,
     // but for block/if/else these are just placeholders, to be filled at end instruction.
     push(immediates, static_cast<uint32_t>(frame.code_offset));
@@ -400,10 +397,6 @@ parser_result<Code> parse_expr(
                 for (const auto br_imm_offset : frame.br_immediate_offsets)
                 {
                     auto* br_imm = code.immediates.data() + br_imm_offset;
-                    // TODO: This will be not needed when br out of blocks is resolved in parser
-                    // skip label_idx
-                    br_imm += sizeof(uint32_t);
-
                     store(br_imm, static_cast<uint32_t>(target_pc));
                     br_imm += sizeof(uint32_t);
                     store(br_imm, static_cast<uint32_t>(target_imm));
@@ -430,7 +423,7 @@ parser_result<Code> parse_expr(
             auto& branch_frame = control_stack.peek(label_idx);
             branch_frame.br_immediate_offsets.push_back(code.immediates.size());
 
-            push_branch_immediates(label_idx, branch_frame, code.immediates);
+            push_branch_immediates(branch_frame, code.immediates);
 
             if (instr == Instr::br)
                 frame.unreachable = true;
@@ -461,13 +454,13 @@ parser_result<Code> parse_expr(
                 auto& branch_frame = control_stack.peek(idx);
                 branch_frame.br_immediate_offsets.push_back(code.immediates.size());
 
-                push_branch_immediates(idx, branch_frame, code.immediates);
+                push_branch_immediates(branch_frame, code.immediates);
             }
 
             auto& default_branch_frame = control_stack.peek(default_label_idx);
             default_branch_frame.br_immediate_offsets.push_back(code.immediates.size());
 
-            push_branch_immediates(default_label_idx, default_branch_frame, code.immediates);
+            push_branch_immediates(default_branch_frame, code.immediates);
 
             frame.unreachable = true;
 
@@ -483,7 +476,7 @@ parser_result<Code> parse_expr(
             auto& branch_frame = control_stack.peek(label_idx);
             branch_frame.br_immediate_offsets.push_back(code.immediates.size());
 
-            push_branch_immediates(label_idx, control_stack.peek(label_idx), code.immediates);
+            push_branch_immediates(control_stack.peek(label_idx), code.immediates);
 
             frame.unreachable = true;
             break;
