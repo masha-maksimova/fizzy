@@ -234,16 +234,17 @@ TEST(wasm_engine, memory)
 TEST(wasm_engine, host_function)
 {
     /* wat2wasm
-    (func $extfunc (import "env" "crc32") (param i32) (result i32))
+    (func $crc32 (import "env" "crc32") (param i32 i32) (result i32))
     (memory (export "memory") 1)
-    (func $test (export "test") (param $a i32) (result i32)
+    (func $test (export "test") (param $a i32) (param $b i32) (result i32)
       local.get $a
-      call $extfunc
+      local.get $b
+      call $crc32
     )
     */
     const auto wasm = from_hex(
-        "0061736d0100000001060160017f017f020d0103656e760563726333320000030201000503010001071102066d"
-        "656d6f72790200047465737400010a08010600200010000b");
+        "0061736d0100000001070160027f7f017f020d0103656e76056372633332000003020100050301000107110206"
+        "6d656d6f72790200047465737400010a0a0108002000200110000b");
 
     for (auto engine_create_fn : all_engines)
     {
@@ -253,7 +254,10 @@ TEST(wasm_engine, host_function)
         const auto func = engine->find_function("test");
         ASSERT_TRUE(func.has_value());
 
-        const auto result = engine->execute(*func, {52});
+        const auto mem_init = bytes{0x12, 0, 0, 0x34};
+        EXPECT_TRUE(engine->init_memory(mem_init));
+
+        const auto result = engine->execute(*func, {0, 4});
         ASSERT_FALSE(result.trapped);
         ASSERT_TRUE(result.value.has_value());
         ASSERT_EQ(*result.value, 52);
