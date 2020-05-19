@@ -9,7 +9,7 @@
 
 namespace fizzy
 {
-uint32_t adler32(bytes_view data)
+inline uint32_t adler32(bytes_view data)
 {
     constexpr uint32_t mod = 65521;
     uint32_t a = 1;
