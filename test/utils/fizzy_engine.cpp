@@ -30,6 +30,10 @@ fizzy::execution_result host_mul256(fizzy::Instance&, std::vector<uint64_t>, int
 {
     return {false, {}};
 }
+fizzy::execution_result host_crc32(fizzy::Instance&, std::vector<uint64_t> args, int)
+{
+    return {false, { args[0] }};
+}
 }  // namespace
 
 std::unique_ptr<WasmEngine> create_fizzy_engine()
@@ -58,6 +62,7 @@ bool FizzyEngine::instantiate(bytes_view wasm_binary)
         auto imports = resolve_imported_functions(module, {
                                                               {"env", "mul256_1", host_mul256},
                                                               {"env", "mul256_2", host_mul256},
+                                                              {"env", "crc32", host_crc32},
                                                           });
         m_instance = fizzy::instantiate(module, imports);
     }
