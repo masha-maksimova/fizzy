@@ -50,6 +50,18 @@ bool Wasm3Engine::parse(bytes_view input) const
     return err == m3Err_none;
 }
 
+namespace
+{
+const void* env_crc32(IM3Runtime runtime, uint64_t* stack, void* mem)
+{
+    // take top item of stack and put back new value
+    (void)runtime;
+    (void)stack;
+    (void)mem;
+    return m3Err_none;
+}
+}  // namespace
+
 bool Wasm3Engine::instantiate(bytes_view wasm_binary)
 {
     // Replace runtime (e.g. instance + module)
@@ -71,6 +83,13 @@ bool Wasm3Engine::instantiate(bytes_view wasm_binary)
     if (m3_LoadModule(m_runtime, module) != m3Err_none)
     {
         m3_FreeModule(module);
+        return false;
+    }
+
+    auto ret = m3_LinkRawFunction(module, "env", "crc32", "i(i)", env_crc32);
+    if (ret != m3Err_none && ret != m3Err_functionLookupFailed)
+    {
+	m3_FreeRuntime(m_runtime);
         return false;
     }
 
