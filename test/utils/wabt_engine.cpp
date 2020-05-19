@@ -7,6 +7,7 @@
 #include <src/interp/interp.h>
 
 #include <test/utils/wasm_engine.hpp>
+#include <cassert>
 
 namespace fizzy::test
 {
@@ -35,6 +36,17 @@ std::unique_ptr<WasmEngine> create_wabt_engine()
 bool WabtEngine::parse(bytes_view input) const
 {
     wabt::interp::Environment env;
+
+    wabt::interp::HostModule* hostModule = env.AppendHostModule("env");
+    assert(hostModule != nullptr);
+
+    hostModule->AppendFuncExport("crc32", {{wabt::Type::I32}, {wabt::Type::I32}},
+        [](const wabt::interp::HostFunc*, const wabt::interp::FuncSignature*,
+            const wabt::interp::TypedValues& args, wabt::interp::TypedValues& results) {
+            // TODO: impl
+            results[0].set_i32(args[0].value.i32);
+            return wabt::interp::Result::Ok;
+        });
     wabt::interp::DefinedModule* module{nullptr};
     wabt::Errors errors;
     wabt::Result result = wabt::ReadBinaryInterp(
@@ -44,6 +56,17 @@ bool WabtEngine::parse(bytes_view input) const
 
 bool WabtEngine::instantiate(bytes_view wasm_binary)
 {
+    wabt::interp::HostModule* hostModule = m_env.AppendHostModule("env");
+    assert(hostModule != nullptr);
+
+    hostModule->AppendFuncExport("crc32", {{wabt::Type::I32}, {wabt::Type::I32}},
+        [](const wabt::interp::HostFunc*, const wabt::interp::FuncSignature*,
+            const wabt::interp::TypedValues& args, wabt::interp::TypedValues& results) {
+            // TODO: impl
+            results[0].set_i32(args[0].value.i32);
+            return wabt::interp::Result::Ok;
+        });
+
     wabt::Errors errors;
     wabt::Result result = wabt::ReadBinaryInterp(&m_env, wasm_binary.data(), wasm_binary.size(),
         wabt::ReadBinaryOptions{}, &errors, &m_module);
