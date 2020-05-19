@@ -34,7 +34,7 @@ fizzy::execution_result host_mul256(fizzy::Instance&, std::vector<uint64_t>, int
 fizzy::execution_result host_crc32(fizzy::Instance& instance, std::vector<uint64_t> args, int)
 {
     auto ret = fizzy::adler32(instance.memory->substr(args[0], args[1]));
-    return {false, { ret }};
+    return {false, {ret}};
 }
 }  // namespace
 
