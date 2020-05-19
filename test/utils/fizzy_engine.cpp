@@ -55,10 +55,11 @@ bool FizzyEngine::instantiate(bytes_view wasm_binary)
     try
     {
         auto module = fizzy::parse(wasm_binary);
-        m_instance = fizzy::instantiate(module, {
-                                                    {host_mul256, module.typesec[0]},
-                                                    {host_mul256, module.typesec[1]},
-                                                });
+        auto imports = resolve_imported_functions(module, {
+                                                              {"env", "mul256_1", host_mul256},
+                                                              {"env", "mul256_2", host_mul256},
+                                                          });
+        m_instance = fizzy::instantiate(module, imports);
     }
     catch (...)
     {
