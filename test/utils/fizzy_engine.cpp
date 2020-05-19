@@ -5,6 +5,7 @@
 #include "execute.hpp"
 #include "parser.hpp"
 
+#include <test/utils/adler32.hpp>
 #include <test/utils/wasm_engine.hpp>
 #include <cassert>
 #include <cstring>
@@ -30,9 +31,10 @@ fizzy::execution_result host_mul256(fizzy::Instance&, std::vector<uint64_t>, int
 {
     return {false, {}};
 }
-fizzy::execution_result host_crc32(fizzy::Instance&, std::vector<uint64_t> args, int)
+fizzy::execution_result host_crc32(fizzy::Instance& instance, std::vector<uint64_t> args, int)
 {
-    return {false, { args[0] }};
+    auto ret = fizzy::adler32(instance.memory->substr(args[0], args[1]));
+    return {false, { ret }};
 }
 }  // namespace
 
