@@ -6,6 +6,7 @@
 #include <src/interp/binary-reader-interp.h>
 #include <src/interp/interp.h>
 
+#include <test/utils/adler32.hpp>
 #include <test/utils/wasm_engine.hpp>
 #include <cassert>
 
@@ -40,13 +41,23 @@ bool WabtEngine::parse(bytes_view input) const
     wabt::interp::HostModule* hostModule = env.AppendHostModule("env");
     assert(hostModule != nullptr);
 
-    hostModule->AppendFuncExport("crc32", {{wabt::Type::I32}, {wabt::Type::I32}},
-        [](const wabt::interp::HostFunc*, const wabt::interp::FuncSignature*,
+    wabt::interp::Memory* memory = (env.GetMemoryCount() > 0) ? env.GetMemory(0) : nullptr;
+
+    hostModule->AppendFuncExport("crc32", {{wabt::Type::I32, wabt::Type::I32}, {wabt::Type::I32}},
+        [memory](const wabt::interp::HostFunc*, const wabt::interp::FuncSignature*,
             const wabt::interp::TypedValues& args, wabt::interp::TypedValues& results) {
-            // TODO: impl
-            results[0].set_i32(args[0].value.i32);
+            assert(false);
+            auto offset = args[0].value.i32;
+            auto length = args[1].value.i32;
+            assert(memory != nullptr);
+            auto memory_data = memory->data;
+            // auto memory = env.GetMemory(0)->data;
+            assert(memory_data.size() > (offset + length));
+//            auto ret = fizzy::adler32({reinterpret_cast<uint8_t*>(&memory_data[offset]), length});
+//            results[0].set_i32(ret);
             return wabt::interp::Result::Ok;
         });
+
     wabt::interp::DefinedModule* module{nullptr};
     wabt::Errors errors;
     wabt::Result result = wabt::ReadBinaryInterp(
@@ -59,11 +70,19 @@ bool WabtEngine::instantiate(bytes_view wasm_binary)
     wabt::interp::HostModule* hostModule = m_env.AppendHostModule("env");
     assert(hostModule != nullptr);
 
-    hostModule->AppendFuncExport("crc32", {{wabt::Type::I32}, {wabt::Type::I32}},
-        [](const wabt::interp::HostFunc*, const wabt::interp::FuncSignature*,
+    wabt::interp::Memory* memory = (m_env.GetMemoryCount() > 0) ? m_env.GetMemory(0) : nullptr;
+
+    hostModule->AppendFuncExport("crc32", {{wabt::Type::I32, wabt::Type::I32}, {wabt::Type::I32}},
+        [memory](const wabt::interp::HostFunc*, const wabt::interp::FuncSignature*,
             const wabt::interp::TypedValues& args, wabt::interp::TypedValues& results) {
-            // TODO: impl
-            results[0].set_i32(args[0].value.i32);
+            auto offset = args[0].value.i32;
+            auto length = args[1].value.i32;
+            assert(memory != nullptr);
+            auto memory_data = memory->data;
+            // auto memory = env.GetMemory(0)->data;
+            assert(memory_data.size() > (offset + length));
+//            auto ret = fizzy::adler32({reinterpret_cast<uint8_t*>(&memory_data[offset]), length});
+//            results[0].set_i32(ret);
             return wabt::interp::Result::Ok;
         });
 
