@@ -230,3 +230,32 @@ TEST(wasm_engine, memory)
         EXPECT_FALSE(engine->init_memory(bytes(PageSize + 4, 0)));
     }
 }
+
+TEST(wasm_engine, host_function)
+{
+    /* wat2wasm
+    (func $extfunc (import "env" "crc32") (param i32) (result i32))
+    (memory (export "memory") 1)
+    (func $test (export "test") (param $a i32) (result i32)
+      local.get $a
+      call $extfunc
+    )
+    */
+    const auto wasm = from_hex(
+        "0061736d0100000001060160017f017f020d0103656e760563726333320000030201000503010001071102066d"
+        "656d6f72790200047465737400010a08010600200010000b");
+
+    for (auto engine_create_fn : all_engines)
+    {
+        auto engine = engine_create_fn();
+        ASSERT_TRUE(engine->parse(wasm));
+        ASSERT_TRUE(engine->instantiate(wasm));
+        const auto func = engine->find_function("test");
+        ASSERT_TRUE(func.has_value());
+
+        const auto result = engine->execute(*func, {52});
+        ASSERT_FALSE(result.trapped);
+        ASSERT_TRUE(result.value.has_value());
+        ASSERT_EQ(*result.value, 52);
+    }
+}
