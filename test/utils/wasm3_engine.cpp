@@ -89,7 +89,7 @@ bool Wasm3Engine::instantiate(bytes_view wasm_binary)
     auto ret = m3_LinkRawFunction(module, "env", "crc32", "i(ii)", env_crc32);
     if (ret != m3Err_none && ret != m3Err_functionLookupFailed)
     {
-	m3_FreeRuntime(m_runtime);
+        m3_FreeRuntime(m_runtime);
         return false;
     }
 
