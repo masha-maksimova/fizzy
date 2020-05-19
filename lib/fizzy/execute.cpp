@@ -271,29 +271,16 @@ void branch(const Code& code, LabelStack& labels, Stack<uint64_t>& stack, const 
     assert(labels.size() > label_idx);
     while (label_idx-- > 0)
         labels.pop();  // Drop skipped labels (does nothing for labelidx == 0).
-    const auto label = labels.top();
     labels.pop();
 
     const auto code_offset = read<uint32_t>(immediates);
     const auto imm_offset = read<uint32_t>(immediates);
-    // TODO: these will be const when blocks other than loop use them
-    size_t stack_height = static_cast<uint32_t>(read<int>(immediates));
-    auto arity = read<uint8_t>(immediates);
+    const auto stack_height = static_cast<size_t>(read<int>(immediates));
+    const auto arity = read<uint8_t>(immediates);
 
-    if (label.pc == nullptr)
-    {
-        // Labels refers to loop, use jump destination resolved in parser
-        pc = code.instructions.data() + code_offset;
-        immediates = code.immediates.data() + imm_offset;
-    }
-    else
-    {
-        // Label refers to block other than loop, use jump destination saved in label
-        pc = label.pc;
-        immediates = label.immediate;
-        stack_height = label.stack_height;
-        arity = static_cast<uint8_t>(label.arity);
-    }
+    // Labels refers to loop, use jump destination resolved in parser
+    pc = code.instructions.data() + code_offset;
+    immediates = code.immediates.data() + imm_offset;
 
     // When branch is taken, additional stack items must be dropped.
     assert(stack.size() >= stack_height + arity);
