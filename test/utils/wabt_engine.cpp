@@ -41,7 +41,7 @@ bool WabtEngine::parse(bytes_view input) const
     wabt::interp::HostModule* hostModule = env.AppendHostModule("env");
     assert(hostModule != nullptr);
 
-    hostModule->AppendFuncExport("crc32", {{wabt::Type::I32, wabt::Type::I32}, {wabt::Type::I32}},
+    hostModule->AppendFuncExport("adler32", {{wabt::Type::I32, wabt::Type::I32}, {wabt::Type::I32}},
         [](const wabt::interp::HostFunc*, const wabt::interp::FuncSignature*,
             const wabt::interp::TypedValues&, wabt::interp::TypedValues&) {
             assert(false);
@@ -60,7 +60,7 @@ bool WabtEngine::instantiate(bytes_view wasm_binary)
     wabt::interp::HostModule* hostModule = m_env.AppendHostModule("env");
     assert(hostModule != nullptr);
 
-    hostModule->AppendFuncExport("crc32", {{wabt::Type::I32, wabt::Type::I32}, {wabt::Type::I32}},
+    hostModule->AppendFuncExport("adler32", {{wabt::Type::I32, wabt::Type::I32}, {wabt::Type::I32}},
         [=](const wabt::interp::HostFunc*, const wabt::interp::FuncSignature*,
             const wabt::interp::TypedValues& args, wabt::interp::TypedValues& results) {
             auto offset = args[0].value.i32;

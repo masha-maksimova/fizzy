@@ -27,10 +27,10 @@ public:
 
 namespace
 {
-fizzy::execution_result host_mul256(fizzy::Instance&, std::vector<uint64_t>, int)
-{
-    return {false, {}};
-}
+//fizzy::execution_result host_mul256(fizzy::Instance&, std::vector<uint64_t>, int)
+//{
+//    return {false, {}};
+//}
 fizzy::execution_result host_crc32(fizzy::Instance& instance, std::vector<uint64_t> args, int)
 {
     auto ret = fizzy::adler32(instance.memory->substr(args[0], args[1]));
@@ -62,9 +62,10 @@ bool FizzyEngine::instantiate(bytes_view wasm_binary)
     {
         auto module = fizzy::parse(wasm_binary);
         auto imports = resolve_imported_functions(module, {
-                                                              {"env", "mul256_1", host_mul256},
-                                                              {"env", "mul256_2", host_mul256},
+//                                                              {"env", "mul256_1", host_mul256},
+//                                                              {"env", "mul256_2", host_mul256},
                                                               {"env", "crc32", host_crc32},
+                                                              {"env", "adler32", host_crc32},
                                                           });
         m_instance = fizzy::instantiate(module, imports);
     }
@@ -72,6 +73,7 @@ bool FizzyEngine::instantiate(bytes_view wasm_binary)
     {
         return false;
     }
+    assert(m_instance != nullptr);
     return true;
 }
 
