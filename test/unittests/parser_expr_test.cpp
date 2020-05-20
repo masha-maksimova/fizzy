@@ -62,26 +62,17 @@ TEST(parser_expr, instr_block)
     const auto [code1, pos1] = parse_expr(empty);
     EXPECT_EQ(code1.instructions,
         (std::vector{Instr::nop, Instr::nop, Instr::block, Instr::end, Instr::end}));
-    EXPECT_EQ(code1.immediates,
-        "00"
-        "04000000"
-        "09000000"_bytes);
+    EXPECT_TRUE(code1.immediates.empty());
 
     const auto block_i64 = "027e0b0b"_bytes;
     const auto [code2, pos2] = parse_expr(block_i64);
     EXPECT_EQ(code2.instructions, (std::vector{Instr::block, Instr::end, Instr::end}));
-    EXPECT_EQ(code2.immediates,
-        "01"
-        "02000000"
-        "09000000"_bytes);
+    EXPECT_TRUE(code2.immediates.empty());
 
     const auto block_f64 = "027c0b0b"_bytes;
     const auto [code3, pos3] = parse_expr(block_f64);
     EXPECT_EQ(code3.instructions, (std::vector{Instr::block, Instr::end, Instr::end}));
-    EXPECT_EQ(code3.immediates,
-        "01"
-        "02000000"
-        "09000000"_bytes);
+    EXPECT_TRUE(code3.immediates.empty());
 }
 
 TEST(parser_expr, instr_block_input_buffer_overflow)
@@ -110,14 +101,11 @@ TEST(parser_expr, block_br)
         (std::vector{Instr::nop, Instr::block, Instr::i32_const, Instr::local_set, Instr::br,
             Instr::i32_const, Instr::local_set, Instr::end, Instr::local_get, Instr::end}));
     EXPECT_EQ(code.immediates,
-        "00"
-        "08000000"
-        "2a000000"
         "0a000000"
         "01000000"
         "00000000"  // label_idx
-        "01000000"  // code_offset
-        "01000000"  // imm_offset
+        "08000000"  // code_offset
+        "21000000"  // imm_offset
         "00000000"  // stack_height
         "00"        // arity
         "0b000000"
@@ -125,7 +113,7 @@ TEST(parser_expr, block_br)
         "01000000"_bytes);
 }
 
-TEST(parser_expr, DISABLED_instr_br_table)
+TEST(parser_expr, instr_br_table)
 {
     /*
      (block
@@ -161,40 +149,48 @@ TEST(parser_expr, DISABLED_instr_br_table)
             Instr::end, Instr::i32_const, Instr::return_, Instr::end, Instr::i32_const,
             Instr::return_, Instr::end, Instr::i32_const, Instr::end}));
 
-    // 5 blocks + 1 local_get before br_table
-    const auto br_table_imm_offset = 5 * (1 + 2 * 4) + 4;
+    // 1 local_get before br_table
+    const auto br_table_imm_offset = 4;
+    // br 0: 4 + 17 * 5 + 4 + 17 = 114 = 0x72
+    // br 1: += 4 + 17 = 135 = 0x87
+    // br 2: += 21 = 156 = 0x9c
+    // br 3: += 21 = 177 = 0xb1
+    // br 4: += 21 = 198 = 0xc6
     const auto expected_br_imm =
-        "04000000"
+        "04000000"  // label_count
 
-        "03000000"          // label_idx
-        "0100000000000000"  // code_offset
-        "0900000000000000"  // imm_offset
-        "00000000"          // stack_height
-        "00"                // arity
+        "03000000"  // label_idx
+        "13000000"  // code_offset
+        "b1000000"  // imm_offset
+        "00000000"  // stack_height
+        "00"        // arity
 
-        "02000000"
-        "0100000000000000"
-        "0900000000000000"
-        "00000000"
-        "00"
+        "02000000"  // label_idx
+        "10000000"  // code_offset
+        "9c000000"  // imm_offset
+        "00000000"  // stack_height
+        "00"        // arity
 
-        "0100000000000000"
-        "0900000000000000"
-        "00000000"
-        "00"
-        "01000000"
+        "01000000"  // label_idx
+        "0d000000"  // code_offset
+        "87000000"  // imm_offset
+        "01000000"  // stack_height
+        "00"        // arity
 
-        "00000000"
-        "0100000000000000"
-        "0900000000000000"
-        "00000000"
-        "00"
+        "00000000"  // label_idx
+        "0a000000"  // code_offset
+        "72000000"  // imm_offset
+        "01000000"  // stack_height
+        "00"        // arity
 
-        "04000000"
-        "0100000000000000"
-        "0900000000000000"
-        "00000000"
-        "00"_bytes;
+        "04000000"   // label_idx
+        "16000000"   // code_offset
+        "c6000000"   // imm_offset
+        "01000000"   // stack_height
+        "00"_bytes;  // arity
+
+    // std::cout <<::testing::PrintToString(expected_br_imm);
+
     EXPECT_EQ(code.immediates.substr(br_table_imm_offset, expected_br_imm.size()), expected_br_imm);
 }
 

@@ -295,7 +295,6 @@ parser_result<Code> parse_expr(
         {
             uint8_t arity;
             std::tie(arity, pos) = parse_blocktype(pos, end);
-            code.immediates.push_back(arity);
 
             const auto parent_stack_height = frame.stack_height;
 
@@ -305,11 +304,6 @@ parser_result<Code> parse_expr(
             // Push label with immediates offset after arity.
             control_stack.push({Instr::block, code.instructions.size(), code.immediates.size(),
                 parent_stack_height, 0, false, arity});
-
-            // TODO: these will not be needed when br out of block is resolved in parser
-            // Placeholders for immediate values, filled at the matching end instruction.
-            push(code.immediates, uint32_t{0});  // Diff to the end instruction.
-            push(code.immediates, uint32_t{0});  // Diff for the immediates.
             break;
         }
 
@@ -335,7 +329,6 @@ parser_result<Code> parse_expr(
         {
             uint8_t arity;
             std::tie(arity, pos) = parse_blocktype(pos, end);
-            code.immediates.push_back(arity);
 
             const auto parent_stack_height = frame.stack_height;
 
@@ -345,11 +338,7 @@ parser_result<Code> parse_expr(
             control_stack.push({Instr::if_, code.instructions.size(), code.immediates.size(),
                 parent_stack_height, 0, false, arity});
 
-            // TODO: these will not be needed when br out of if is resolved in parser
-            // Placeholders for immediate values, filled at the matching end and else instructions.
-            push(code.immediates, uint32_t{0});  // Diff to the end instruction.
-            push(code.immediates, uint32_t{0});  // Diff for the immediates
-
+            // Placeholders for immediate values, filled at the matching end or else instructions.
             push(code.immediates, uint32_t{0});  // Diff to the else instruction
             push(code.immediates, uint32_t{0});  // Diff for the immediates.
 
@@ -376,8 +365,7 @@ parser_result<Code> parse_expr(
             const auto target_imm = static_cast<uint32_t>(code.immediates.size());
 
             // Set the imm values for else instruction.
-            auto* if_imm =
-                code.immediates.data() + if_imm_offset + sizeof(target_pc) + sizeof(target_imm);
+            auto* if_imm = code.immediates.data() + if_imm_offset;
             store(if_imm, target_pc);
             if_imm += sizeof(target_pc);
             store(if_imm, target_imm);
