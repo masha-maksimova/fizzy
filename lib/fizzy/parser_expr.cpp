@@ -123,7 +123,7 @@ parser_result<Code> parse_expr(const uint8_t* pos, const uint8_t* end, const Mod
 
     // TODO: Get function result arity from the function type in Module.
     const uint8_t func_result_arity = 0;
-    control_stack.push({Instr::block, func_result_arity, 0});  // The function's implicit block.
+    control_stack.emplace(Instr::block, func_result_arity, 0);  // The function's implicit block.
 
     const auto metrics_table = get_instruction_metrics_table();
 
@@ -306,7 +306,7 @@ parser_result<Code> parse_expr(const uint8_t* pos, const uint8_t* end, const Mod
             code.immediates.push_back(arity);
 
             // Push label with immediates offset after arity.
-            control_stack.push({Instr::block, arity, frame.stack_height, code.immediates.size()});
+            control_stack.emplace(Instr::block, arity, frame.stack_height, code.immediates.size());
 
             // Placeholders for immediate values, filled at the matching end instruction.
             push(code.immediates, uint32_t{0});  // Diff to the end instruction.
@@ -319,7 +319,7 @@ parser_result<Code> parse_expr(const uint8_t* pos, const uint8_t* end, const Mod
             uint8_t arity;
             std::tie(arity, pos) = parse_blocktype(pos, end);
 
-            control_stack.push({Instr::loop, arity, frame.stack_height});
+            control_stack.emplace(Instr::loop, arity, frame.stack_height);
             break;
         }
 
@@ -329,7 +329,7 @@ parser_result<Code> parse_expr(const uint8_t* pos, const uint8_t* end, const Mod
             std::tie(arity, pos) = parse_blocktype(pos, end);
             code.immediates.push_back(arity);
 
-            control_stack.push({Instr::if_, arity, frame.stack_height, code.immediates.size()});
+            control_stack.emplace(Instr::if_, arity, frame.stack_height, code.immediates.size());
 
             // Placeholders for immediate values, filled at the matching end and else instructions.
             push(code.immediates, uint32_t{0});  // Diff to the end instruction.
