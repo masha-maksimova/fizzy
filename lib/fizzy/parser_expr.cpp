@@ -95,19 +95,19 @@ void update_caller_frame(ControlFrame& frame, const FuncType& func_type)
 
 void validate_result_count(const ControlFrame& frame)
 {
-    if (!frame.unreachable)
-    {
-        // This is checked by "stack underflow".
-        assert(frame.stack_height >= frame.parent_stack_height);
+    if (frame.unreachable)
+        return;
 
-        if (frame.stack_height < frame.parent_stack_height + frame.arity)
-            throw validation_error{"missing result"};
+    // This is checked by "stack underflow".
+    assert(frame.stack_height >= frame.parent_stack_height);
 
-        // TODO: Enable "too many results" check when having information about number of function
-        //       results.
-        // if (frame.stack_height > frame.parent_stack_height + frame.arity)
-        //     throw validation_error{"too many results"};
-    }
+    if (frame.stack_height < frame.parent_stack_height + frame.arity)
+        throw validation_error{"missing result"};
+
+    // TODO: Enable "too many results" check when having information about number of function
+    //       results.
+    // if (frame.stack_height > frame.parent_stack_height + frame.arity)
+    //     throw validation_error{"too many results"};
 }
 
 }  // namespace
