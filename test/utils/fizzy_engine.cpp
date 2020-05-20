@@ -27,7 +27,7 @@ public:
 
 namespace
 {
-//fizzy::execution_result host_mul256(fizzy::Instance&, std::vector<uint64_t>, int)
+// fizzy::execution_result host_mul256(fizzy::Instance&, std::vector<uint64_t>, int)
 //{
 //    return {false, {}};
 //}
@@ -61,12 +61,17 @@ bool FizzyEngine::instantiate(bytes_view wasm_binary)
     try
     {
         auto module = fizzy::parse(wasm_binary);
-        auto imports = resolve_imported_functions(module, {
-//                                                              {"env", "mul256_1", host_mul256},
-//                                                              {"env", "mul256_2", host_mul256},
-                                                              {"env", "crc32", host_crc32},
-                                                              {"env", "adler32", host_crc32},
-                                                          });
+        auto imports = fizzy::resolve_imported_functions(module,
+            {
+                //                                                              {"env", "mul256_1",
+                //                                                              host_mul256},
+                //                                                              {"env", "mul256_2",
+                //                                                              host_mul256},
+                {"env", "crc32", {fizzy::ValType::i32, fizzy::ValType::i32}, fizzy::ValType::i32,
+                    host_crc32},
+                {"env", "adler32", {fizzy::ValType::i32, fizzy::ValType::i32}, fizzy::ValType::i32,
+                    host_crc32},
+            });
         m_instance = fizzy::instantiate(module, imports);
     }
     catch (...)
