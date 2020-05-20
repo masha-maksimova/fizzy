@@ -34,8 +34,14 @@ struct ControlFrame
     /// The instruction that created the label.
     const Instr instruction{Instr::unreachable};
 
+    /// The target instruction code offset.
+    const size_t code_offset{0};
+
     /// The immediates offset for block instructions.
     const size_t immediates_offset{0};
+
+    /// The frame stack height of the parent frame.
+    const int parent_stack_height{0};
 
     /// The frame stack height.
     int stack_height{0};
@@ -43,6 +49,9 @@ struct ControlFrame
     /// Whether the remainder of the block is unreachable (used to handle stack-polymorphic typing
     /// after branches).
     bool unreachable{false};
+
+    /// Number of results returned from the frame.
+    uint8_t arity{0};
 };
 
 /// Parses blocktype.
@@ -77,6 +86,19 @@ void update_caller_frame(ControlFrame& frame, const FuncType& func_type)
     frame.stack_height += stack_height_change;
 }
 
+void push_branch_immediates(uint32_t label_idx, const ControlFrame& frame, bytes& immediates)
+{
+    // TODO: This will be not needed when br out of blocks is resolved in parser
+    push(immediates, label_idx);
+
+    // NOTE: These are currently used only for br out of loops, for blocks these are just
+    // placeholders, ignored in execution
+    push(immediates, static_cast<uint32_t>(frame.code_offset));
+    push(immediates, static_cast<uint32_t>(frame.immediates_offset));
+    push(immediates, static_cast<uint32_t>(frame.parent_stack_height));
+    push(immediates, frame.arity);
+}
+
 }  // namespace
 
 parser_result<Code> parse_expr(const uint8_t* pos, const uint8_t* end, const Module& module)
@@ -85,7 +107,6 @@ parser_result<Code> parse_expr(const uint8_t* pos, const uint8_t* end, const Mod
 
     // The stack of control frames allowing to distinguish between block/if/else and label
     // instructions as defined in Wasm Validation Algorithm.
-    // For a block/if/else instruction the value is the block/if/else's immediate offset.
     Stack<ControlFrame> control_stack;
 
     control_stack.push({Instr::block});  // The function's implicit block.
@@ -269,12 +290,16 @@ parser_result<Code> parse_expr(const uint8_t* pos, const uint8_t* end, const Mod
             std::tie(arity, pos) = parse_blocktype(pos, end);
             code.immediates.push_back(arity);
 
+            const auto parent_stack_height = frame.stack_height;
+
             // Parent frame gets additional items on stack after this block exit.
             frame.stack_height += arity;
 
             // Push label with immediates offset after arity.
-            control_stack.push({Instr::block, code.immediates.size()});
+            control_stack.push({Instr::block, code.instructions.size(), code.immediates.size(),
+                parent_stack_height});
 
+            // TODO: these will not be needed when br out of block is resolved in parser
             // Placeholders for immediate values, filled at the matching end instruction.
             push(code.immediates, uint32_t{0});  // Diff to the end instruction.
             push(code.immediates, uint32_t{0});  // Diff for the immediates.
@@ -286,10 +311,16 @@ parser_result<Code> parse_expr(const uint8_t* pos, const uint8_t* end, const Mod
             uint8_t arity;
             std::tie(arity, pos) = parse_blocktype(pos, end);
 
+            const auto parent_stack_height = frame.stack_height;
+
             // Parent frame gets additional items on stack after this block exit.
             frame.stack_height += arity;
 
-            control_stack.push({Instr::loop});
+            // Always pushing 0 as loop's arity, because br executed in loop jumps to the top,
+            // resetting frame stack to 0, so return type arity is not important for br resolution.
+            control_stack.push({Instr::loop, code.instructions.size(), code.immediates.size(),
+                parent_stack_height});
+
             break;
         }
 
@@ -299,11 +330,15 @@ parser_result<Code> parse_expr(const uint8_t* pos, const uint8_t* end, const Mod
             std::tie(arity, pos) = parse_blocktype(pos, end);
             code.immediates.push_back(arity);
 
+            const auto parent_stack_height = frame.stack_height;
+
             // Parent frame gets additional items on stack after this block exit.
             frame.stack_height += arity;
 
-            control_stack.push({Instr::if_, code.immediates.size()});
+            control_stack.push({Instr::if_, code.instructions.size(), code.immediates.size(),
+                parent_stack_height});
 
+            // TODO: these will not be needed when br out of if is resolved in parser
             // Placeholders for immediate values, filled at the matching end and else instructions.
             push(code.immediates, uint32_t{0});  // Diff to the end instruction.
             push(code.immediates, uint32_t{0});  // Diff for the immediates
@@ -367,7 +402,7 @@ parser_result<Code> parse_expr(const uint8_t* pos, const uint8_t* end, const Mod
             if (label_idx >= control_stack.size())
                 throw validation_error{"invalid label index"};
 
-            push(code.immediates, label_idx);
+            push_branch_immediates(label_idx, control_stack.peek(label_idx), code.immediates);
 
             if (instr == Instr::br)
                 frame.unreachable = true;
@@ -393,8 +428,10 @@ parser_result<Code> parse_expr(const uint8_t* pos, const uint8_t* end, const Mod
 
             push(code.immediates, static_cast<uint32_t>(label_indices.size()));
             for (const auto idx : label_indices)
-                push(code.immediates, idx);
-            push(code.immediates, default_label_idx);
+                push_branch_immediates(idx, control_stack.peek(idx), code.immediates);
+
+            push_branch_immediates(
+                default_label_idx, control_stack.peek(default_label_idx), code.immediates);
 
             frame.unreachable = true;
 
@@ -405,7 +442,10 @@ parser_result<Code> parse_expr(const uint8_t* pos, const uint8_t* end, const Mod
         {
             // return is identical to br MAX
             assert(!control_stack.empty());
-            push(code.immediates, control_stack.size() - 1);
+            const uint32_t label_idx = static_cast<uint32_t>(control_stack.size() - 1);
+
+            push_branch_immediates(label_idx, control_stack.peek(label_idx), code.immediates);
+
             frame.unreachable = true;
             break;
         }
